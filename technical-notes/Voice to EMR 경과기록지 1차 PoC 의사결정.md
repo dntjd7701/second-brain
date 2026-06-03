@@ -79,6 +79,8 @@ WebSpeechSttProvider -> OpenAiSttProvider / AzureSttProvider / InternalSttProvid
 MockSoapNormalizer -> LlmSoapNormalizer
 ```
 
+2026-06-03 1차 구현에서는 Voice to EMR 결과를 기존 draft에 덮어쓰지 않고 새 경과기록 draft sheet로 추가하는 방식을 선택했다. 이유는 시연 안정성이다. 사용자가 이미 작성하던 경과기록을 잃지 않고, 음성으로 생성된 초안이 경과기록지 안에 별도 draft로 들어오는 장면을 명확히 보여줄 수 있다. 기존 draft SOAP 영역 교체나 커서 위치 삽입은 이후 실제 사용성 검증 단계에서 다시 판단한다.
+
 ## AI가 필요한 시점
 
 AI는 1차 기능 구현에 필수는 아니다. 하지만 운영 품질을 검증하려면 필요해질 가능성이 높다.
