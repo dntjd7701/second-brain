@@ -241,6 +241,37 @@ ProgressNote/components/ProgressNote.scss
 
 이 구현은 AI 기능을 붙이지 않는다. 다만 provider 이름을 `WebSpeechSttProvider`, normalizer 이름을 `MockSoapNormalizer`로 남겨 이후 `OpenAiSttProvider`, `AzureSttProvider`, `InternalSttProvider`, `LlmSoapNormalizer`로 교체할 수 있게 했다.
 
+## 2026-06-03 AI STT provider 추가 메모
+
+Web Speech API에서 AirPods 입력은 잡히지만 `no-speech`가 반복되는 문제가 확인되었다. 이 경우 SOAP 이전 단계인 STT 품질이 병목이므로, 기존 Web Speech 흐름은 유지하면서 AI STT provider를 병렬로 추가한다.
+
+추가 구조는 다음과 같다.
+
+```text
+브라우저 STT
+-> WebSpeechSttProvider
+-> 브라우저 Web Speech API가 바로 transcript 반환
+
+AI STT
+-> MediaRecorderAiSttProvider
+-> MediaRecorder로 audio/webm 또는 audio/mp4 생성
+-> FormData(file, language, context)
+-> 백엔드 STT gateway
+-> transcript 반환
+```
+
+FE endpoint는 다음 백엔드 gateway를 전제로 둔다.
+
+```text
+POST /medical/recordSheet/voice-to-emr/stt
+Content-Type: multipart/form-data
+file: voice-to-emr.webm 또는 voice-to-emr.m4a
+language: ko-KR
+context: JSON
+```
+
+백엔드는 OpenAI, Azure, 내부 STT 중 어느 provider를 쓰든 FE 계약을 `transcript` 반환으로 맞춘다. FE가 OpenAI/Azure API key를 들고 외부 STT를 직접 호출하지 않는다.
+
 이번 단계에서 검증하지 않는 것은 다음이다.
 
 - 의료 문장 요약 품질
