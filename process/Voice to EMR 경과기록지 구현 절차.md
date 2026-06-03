@@ -334,6 +334,17 @@ FE AI STT 모드
 
 OpenAI 호출에는 `context`를 전달하지 않는다. FE가 전달하는 context에는 화면/환자/진료 맥락이 섞일 수 있으므로, 직접 호출 PoC에서는 음성 파일과 언어값만 외부 provider에 보낸다.
 
+STT 정확도가 낮을 때는 OpenAI transcription의 `prompt` 파라미터에 일반 EMR 힌트를 제공한다. 이 prompt는 환자별 context가 아니라 다음과 같은 도메인 힌트만 포함한다.
+
+```text
+한국어 의사와 환자의 외래 진료 대화
+경과기록지와 SOAP 작성을 위한 전사
+주관적 증상, 객관적 소견, 평가, 계획
+기침, 가래, 발열, 인후통, 호흡곤란, 혈압, 맥박, 체온, 산소포화도, 검사, 처방, 재진, 추적 관찰
+```
+
+이 방식은 STT가 “이 음성이 어떤 도메인의 대화인지”를 알게 해 의학 용어와 경과기록 표현을 더 잘 선택하도록 돕는다. 단, 환자별 개인정보나 실제 진료 맥락을 prompt에 넣지 않는다.
+
 ### OpenAI SOAP 분류 PoC 구현
 
 STT가 transcript를 반환한 뒤, 기존 `MockSoapNormalizer` 대신 백엔드 LLM SOAP normalizer를 먼저 호출한다.
