@@ -1,0 +1,213 @@
+# Voice to EMR 경과기록지 구현 절차
+
+## 목표
+
+이 문서는 Voice to EMR 경과기록지 1차 PoC를 어떤 순서로 구현할지 정리한다. 목표는 OpenAI나 Azure 같은 유료 AI 연동이 아니다. 먼저 경과기록지 화면 안에서 음성 기반 초안 입력 흐름이 자연스럽게 동작하는지 검증한다.
+
+연결되는 의사결정 배경은 [[Voice to EMR 경과기록지 1차 PoC 의사결정]]에 정리한다. 기존 경과기록지 조회/신규작성 기준은 [[경과기록지_조회와_신규작성_분리_기준]]을 따른다.
+
+## 1차 프로세스
+
+1차 프로세스는 다음으로 고정한다.
+
+```text
+녹음 버튼
+-> Web Speech API 전사
+-> SOAP mock/rule 정리
+-> 경과기록 draft 삽입
+-> 사용자 검토/수정
+-> 기존 저장 버튼으로 저장
+```
+
+중요한 점은 저장 주체다. Voice to EMR은 경과기록 내용을 확정 저장하지 않는다. 초안을 draft에 입력할 뿐이다. 사용자가 내용을 확인하고 기존 저장 버튼을 눌러야 실제 경과기록 저장 프로세스가 수행된다.
+
+## 화면 흐름
+
+경과기록지 사이드바 안에 `Voice to EMR` 진입점을 둔다.
+
+권장 UX는 다이얼로그 방식이다.
+
+```text
+Voice to EMR 버튼 클릭
+-> 녹음/전사 다이얼로그 열림
+-> 마이크 권한 요청
+-> 녹음 시작
+-> 전사 텍스트 누적 표시
+-> 녹음 종료
+-> SOAP 초안 생성
+-> 미리보기
+-> 적용
+-> 경과기록 draft에 삽입
+```
+
+다이얼로그에는 최소한 다음 상태가 필요하다.
+
+- 대기
+- 녹음 중
+- 전사 완료
+- SOAP 변환 완료
+- 적용 완료
+- 오류
+
+오류는 화면에서 숨기지 않는다. 마이크 권한 거부, 브라우저 미지원, 전사 실패, 빈 전사 결과는 사용자에게 명확히 알려야 한다.
+
+## FE 구성
+
+1차에서는 FE 중심으로 구현한다.
+
+```text
+VoiceEmrDialog
+VoiceEmrSpeechService
+MockSoapNormalizer
+ProgressNote.applyVoiceEmrNote(noteHtml)
+```
+
+역할은 다음처럼 나눈다.
+
+- `VoiceEmrDialog`: 녹음/전사 UI와 미리보기 담당
+- `VoiceEmrSpeechService`: Web Speech API 래핑
+- `MockSoapNormalizer`: 전사 텍스트를 SOAP 구조로 변환
+- `applyVoiceEmrNote`: 생성된 noteHtml을 현재 경과기록 draft에 삽입
+
+`VoiceEmrSpeechService`는 브라우저 API 차이를 감싼다.
+
+```text
+window.SpeechRecognition
+window.webkitSpeechRecognition
+```
+
+둘 다 없으면 미지원 메시지를 보여주고, 수동 전사 입력 textarea로 fallback할 수 있게 한다.
+
+## SOAP mock/rule 정리
+
+1차 SOAP 변환은 정확한 의료 판단이 아니라 흐름 검증용이다. 따라서 복잡한 판단을 하지 않는다.
+
+기본 규칙은 다음으로 둔다.
+
+```text
+S: 전사 텍스트 전체 또는 환자 호소 중심 문장
+O: 객관 소견이 명시된 문장만 추출, 없으면 빈 값
+A: 진단/의심/평가 표현이 있으면 추출, 없으면 빈 값
+P: 검사/처방/추적/계획 표현이 있으면 추출, 없으면 빈 값
+```
+
+초기 구현은 더 단순해도 된다.
+
+```text
+S: 전사 텍스트 전체
+O:
+A:
+P:
+```
+
+이 방식의 목적은 SOAP 품질 검증이 아니라 경과기록지 입력 흐름 검증이다. 실제 SOAP 품질은 `LlmSoapNormalizer`를 붙이는 단계에서 검증한다.
+
+## 경과기록 draft 삽입
+
+생성 결과는 다음 두 형태를 가진다.
+
+```json
+{
+  "transcript": "전사 텍스트",
+  "soap": {
+    "subjective": "",
+    "objective": "",
+    "assessment": "",
+    "plan": ""
+  },
+  "noteHtml": "<p><strong>S</strong> : ...</p>"
+}
+```
+
+화면에 실제 삽입하는 값은 `noteHtml`이다. 원문 전사와 SOAP JSON은 미리보기와 디버깅용이다.
+
+`noteHtml`은 단순 태그만 사용한다.
+
+```html
+<p><strong>S</strong> : ...</p>
+<p><strong>O</strong> : ...</p>
+<p><strong>A</strong> : ...</p>
+<p><strong>P</strong> : ...</p>
+```
+
+기존 draft 내용이 있으면 바로 덮어쓰지 않는다. 사용자 확인을 거친다.
+
+```text
+현재 작성 중인 경과기록 내용이 있습니다. Voice to EMR 결과로 교체하시겠습니까?
+```
+
+1차 기본값은 "현재 draft의 SOAP 영역 교체"다. 커서 위치 삽입은 나중에 검토한다.
+
+## 저장 흐름
+
+저장은 변경하지 않는다.
+
+Voice to EMR 적용 후 경과기록 draft가 dirty 상태가 되면, 사용자는 기존 저장 버튼을 누른다. 그러면 기존 경과기록 저장 프로세스가 수행된다.
+
+```text
+draft HTML
+-> RecordSheetService.insert()
+-> dirty data 생성
+-> /medical/recordSheet/0ho01001
+-> 기존 경과기록 저장/문서 생성/전자인증 흐름
+```
+
+이 구조를 유지해야 하는 이유는 책임 경계 때문이다. Voice to EMR은 작성 보조이고, 경과기록 저장의 업무 규칙은 기존 경과기록 서비스가 담당한다.
+
+## Provider 교체 지점
+
+1차부터 provider 경계를 이름으로 남긴다. 처음 구현은 mock이어도 나중에 교체할 수 있어야 한다.
+
+```text
+SttProvider
+  WebSpeechSttProvider
+  OpenAiSttProvider
+  AzureSttProvider
+  InternalSttProvider
+
+SoapNormalizer
+  MockSoapNormalizer
+  LlmSoapNormalizer
+```
+
+1차에서는 `WebSpeechSttProvider`와 `MockSoapNormalizer`만 구현한다.
+
+2차 품질 검증에서 STT 품질이 문제로 확인되면 `OpenAiSttProvider`, `AzureSttProvider`, `InternalSttProvider` 중 하나를 붙인다.
+
+SOAP 정리 품질이 문제로 확인되면 `LlmSoapNormalizer`를 붙인다. 이때도 LLM은 HTML을 직접 만들지 않고 SOAP JSON까지만 만든다. HTML 생성은 우리 코드에서 담당한다.
+
+## 검증 항목
+
+1차 검증은 다음 항목만 본다.
+
+- 브라우저에서 마이크 권한 요청이 정상 동작하는가
+- 녹음/전사 시작과 중지가 사용자에게 명확한가
+- 전사 텍스트가 다이얼로그에 누적되는가
+- SOAP mock 결과가 미리보기로 표시되는가
+- 적용 시 경과기록 draft에 HTML이 들어가는가
+- 기존 내용이 있을 때 덮어쓰기 확인이 뜨는가
+- 기존 저장 버튼으로 저장/재조회가 가능한가
+- 브라우저 미지원 또는 권한 거부 시 fallback이 있는가
+
+이번 단계에서 검증하지 않는 것은 다음이다.
+
+- 의료 문장 요약 품질
+- 의학 용어 STT 정확도
+- 화자 구분
+- 처방/상병 후보 추출
+- 운영 보안 정책
+- 유료 API 비용 산정
+
+## 다음 단계
+
+1차 PoC가 성공하면 다음 순서로 확장한다.
+
+```text
+1. 실제 진료 대화 샘플로 Web Speech API 한계 확인
+2. STT provider 교체 필요성 판단
+3. LLM SOAP normalizer 도입 여부 판단
+4. 보안 정책에 맞는 OpenAI/Azure/Internal provider 결정
+5. 처방/상병 후보 추천은 별도 phase로 분리
+```
+
+이 순서를 지키면 AI 도입 자체가 목적이 되지 않는다. 먼저 업무 흐름을 검증하고, 부족한 품질 지점만 교체한다.
