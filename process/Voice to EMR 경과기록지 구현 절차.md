@@ -308,6 +308,32 @@ voice-to-emr:
 
 이 방식은 `export OPENAI_API_KEY=...` 방식보다 사용자가 이해하기 쉽고, local PoC 환경을 재현하기 쉽다. 단, 실제 환자 음성이나 개인정보가 포함된 녹취를 외부 provider로 전송하지 않는다는 테스트 전제를 지켜야 한다.
 
+### OpenAI 직접 호출 PoC 구현
+
+2026-06-03 기준 OpenAI STT 직접 호출을 PoC 목적으로 붙인다. 사용 전제는 명확하다.
+
+```text
+실제 환자 음성/개인정보는 사용하지 않는다.
+테스트용 음성만 OpenAI로 전송한다.
+```
+
+구현 흐름은 다음과 같다.
+
+```text
+FE AI STT 모드
+-> MediaRecorder 음성 파일 생성
+-> POST /medical/recordSheet/voice-to-emr/stt
+-> RecordSheetService.transcribeVoiceToEmrProvider(...)
+-> provider=openai 확인
+-> OpenAiVoiceToEmrSttClient
+-> POST https://api.openai.com/v1/audio/transcriptions
+-> 응답 text를 transcript로 반환
+```
+
+`OpenAiVoiceToEmrSttClient`는 multipart 요청을 만들고, OpenAI 응답의 `text` 값을 `VoiceToEmrSttResponseDto.transcript`로 변환한다. 로그에는 API key, 음성 원문, transcript 원문을 남기지 않는다. 실패 로그는 HTTP 상태, 모델명, 파일 크기 정도만 남긴다.
+
+OpenAI 호출에는 `context`를 전달하지 않는다. FE가 전달하는 context에는 화면/환자/진료 맥락이 섞일 수 있으므로, 직접 호출 PoC에서는 음성 파일과 언어값만 외부 provider에 보낸다.
+
 이번 단계에서 검증하지 않는 것은 다음이다.
 
 - 의료 문장 요약 품질
