@@ -272,6 +272,19 @@ context: JSON
 
 백엔드는 OpenAI, Azure, 내부 STT 중 어느 provider를 쓰든 FE 계약을 `transcript` 반환으로 맞춘다. FE가 OpenAI/Azure API key를 들고 외부 STT를 직접 호출하지 않는다.
 
+medical 백엔드에는 다음 진입점을 둔다.
+
+```text
+RecordSheetController
+-> POST /recordSheet/voice-to-emr/stt
+-> IRecordSheetService.transcribeVoiceToEmr(file, language, context)
+-> RecordSheetService.transcribeVoiceToEmrProvider(...)
+```
+
+이때 외부에서 호출되는 실제 경로는 medical prefix를 포함한 `/medical/recordSheet/voice-to-emr/stt`가 된다. 서비스는 음성 파일 누락을 먼저 검증하고, provider가 설정되지 않은 상태에서는 `Voice to EMR AI STT provider가 설정되지 않았습니다. OpenAI/Azure/Internal STT 연결 후 사용하세요.`라는 명확한 오류를 반환한다.
+
+이 오류는 기능 실패가 아니라 현재 단계의 경계 표시다. 즉, FE가 `MediaRecorder`로 음성 파일을 만들고 medical 백엔드까지 전달하는 통로는 확인하되, 실제 STT 품질 검증은 OpenAI/Azure/Internal STT 중 하나를 붙이는 다음 단계에서 수행한다.
+
 이번 단계에서 검증하지 않는 것은 다음이다.
 
 - 의료 문장 요약 품질
