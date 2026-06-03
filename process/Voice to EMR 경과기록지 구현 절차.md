@@ -285,6 +285,29 @@ RecordSheetController
 
 이 오류는 기능 실패가 아니라 현재 단계의 경계 표시다. 즉, FE가 `MediaRecorder`로 음성 파일을 만들고 medical 백엔드까지 전달하는 통로는 확인하되, 실제 STT 품질 검증은 OpenAI/Azure/Internal STT 중 하나를 붙이는 다음 단계에서 수행한다.
 
+### OpenAI API key 제공 방식
+
+PoC에서 OpenAI STT를 테스트하더라도 API key는 FE, 소스코드, Vault 문서에 남기지 않는다. medical 백엔드에는 다음 파일을 optional import로 둔다.
+
+```text
+config/application.yml
+-> optional:file:./config/voice-to-emr.local.yml
+```
+
+샘플 설정은 `config/voice-to-emr.example.yml`에 두고, 실제 key는 git에서 제외되는 `config/voice-to-emr.local.yml`에만 입력한다.
+
+```yaml
+voice-to-emr:
+  stt:
+    provider: openai
+    openai:
+      api-key: sk-...
+      base-url: https://api.openai.com
+      model: gpt-4o-mini-transcribe
+```
+
+이 방식은 `export OPENAI_API_KEY=...` 방식보다 사용자가 이해하기 쉽고, local PoC 환경을 재현하기 쉽다. 단, 실제 환자 음성이나 개인정보가 포함된 녹취를 외부 provider로 전송하지 않는다는 테스트 전제를 지켜야 한다.
+
 이번 단계에서 검증하지 않는 것은 다음이다.
 
 - 의료 문장 요약 품질
