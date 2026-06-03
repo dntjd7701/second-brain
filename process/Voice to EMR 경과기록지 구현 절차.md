@@ -334,6 +334,28 @@ FE AI STT 모드
 
 OpenAI 호출에는 `context`를 전달하지 않는다. FE가 전달하는 context에는 화면/환자/진료 맥락이 섞일 수 있으므로, 직접 호출 PoC에서는 음성 파일과 언어값만 외부 provider에 보낸다.
 
+### OpenAI SOAP 분류 PoC 구현
+
+STT가 transcript를 반환한 뒤, 기존 `MockSoapNormalizer` 대신 백엔드 LLM SOAP normalizer를 먼저 호출한다.
+
+```text
+transcript
+-> POST /medical/recordSheet/voice-to-emr/soap
+-> RecordSheetService.normalizeVoiceToEmrSoap(...)
+-> provider=openai 확인
+-> OpenAiVoiceToEmrSoapClient
+-> POST https://api.openai.com/v1/responses
+-> structured outputs JSON
+-> subjective/objective/assessment/plan 반환
+-> FE에서 noteHtml 생성
+```
+
+LLM은 경과기록 HTML을 직접 만들지 않는다. LLM은 SOAP JSON만 반환하고, HTML 생성은 FE의 `toHtml` 로직이 담당한다. 이 경계를 유지해야 나중에 SOAP 문구 품질만 조정하고, 경과기록 editor 삽입 구조는 그대로 유지할 수 있다.
+
+OpenAI SOAP 호출은 `voice-to-emr.soap.provider`가 없으면 `voice-to-emr.stt.provider` 값을 따른다. 따라서 local PoC에서는 `stt.provider=openai`만 있어도 SOAP 분류가 OpenAI로 동작한다. SOAP 모델은 기본값 `gpt-4o-mini`를 사용한다.
+
+FE에서는 LLM SOAP 분류가 실패하면 mock 분류로 fallback한다. 시연 중 외부 API 오류가 발생해도 경과기록 draft 입력 흐름이 끊기지 않게 하기 위한 장치다.
+
 이번 단계에서 검증하지 않는 것은 다음이다.
 
 - 의료 문장 요약 품질
