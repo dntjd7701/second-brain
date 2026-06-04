@@ -348,6 +348,20 @@ STT 정확도가 낮을 때는 OpenAI transcription의 `prompt` 파라미터에 
 
 이 방식은 STT가 “이 음성이 어떤 도메인의 대화인지”를 알게 해 의학 용어와 경과기록 표현을 더 잘 선택하도록 돕는다. 단, 환자별 개인정보나 실제 진료 맥락을 prompt에 넣지 않는다.
 
+무음 또는 짧은 잡음이 OpenAI STT로 전송되면, EMR 도메인 prompt 때문에 그럴듯한 의학 문장으로 추측 전사될 수 있다. 예를 들어 아무 말도 하지 않았는데 `Abdomen 단순촬영에서 obstruction 소견 보입니다.`처럼 실제 발화가 아닌 결과가 생성될 수 있다. 이 방식은 의료 기록 보조 기능에서는 위험하므로 다음 안전장치를 둔다.
+
+```text
+FE
+-> AI STT 녹음 시간이 최소 기준보다 짧으면 provider 호출 전에 차단
+-> 무음/짧은 잡음 파일을 OpenAI로 보내지 않음
+
+BE
+-> OpenAI transcription prompt에 추측 금지 문구를 항상 추가
+-> 커스텀 prompt를 사용하더라도 "들리지 않는 말, 검사명, 진단명, 소견을 임의 생성하지 말라"는 안전 문구 유지
+```
+
+이 안전장치는 STT 품질 개선이 아니라 위험한 false positive를 줄이기 위한 장치다. 운영 전환 단계에서는 녹음 길이뿐 아니라 실제 음성 레벨을 검사하는 VAD 또는 오디오 레벨 기반 음성 감지까지 추가해야 한다.
+
 ### OpenAI SOAP 분류 PoC 구현
 
 STT가 transcript를 반환한 뒤, 기존 `MockSoapNormalizer` 대신 백엔드 LLM SOAP normalizer를 먼저 호출한다.
