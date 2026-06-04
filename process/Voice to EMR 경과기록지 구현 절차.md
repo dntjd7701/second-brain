@@ -393,6 +393,86 @@ FE에서는 LLM SOAP 분류가 실패해도 mock 분류로 fallback하지 않는
 - 운영 보안 정책
 - 유료 API 비용 산정
 
+## 2026-06-04 Realtime STT UI 전환 메모
+
+Web Speech API와 파일 업로드형 STT 모두 시연은 가능하지만, 사용자가 보기에는 "녹음 종료 후 결과가 생기는 기능"에 가깝다. 경과기록 Voice to EMR을 설득/시연하려면 녹음 중에 대화가 실제로 전사되고 있다는 장면이 더 중요하다. 그래서 2026-06-04 구현에서는 기존 흐름을 Realtime STT 중심 UI로 재구성한다.
+
+변경된 화면 구조는 다음이다.
+
+```text
+VoiceEmrDialog 1080 x 720
+-> 상단: icon 녹음 버튼, 00:00:00 timer, WebSocket 상태, STT 상태
+-> 좌측: 실시간 대화 bubble timeline
+-> 우측: SOAP 초안 preview/edit
+```
+
+Realtime 프로세스는 다음으로 고정한다.
+
+```text
+녹음 시작
+-> FE RealtimeAiSttProvider
+-> 마이크 입력을 24kHz mono PCM chunk로 변환
+-> WebSocket /medical/recordSheet/voice-to-emr/realtime
+-> medical backend OpenAI Realtime WebSocket proxy
+-> input_audio_buffer.append
+-> transcription.delta/completed 수신
+-> 발화 bubble 누적/확정
+-> 화자 자동 추정
+-> 사용자 화자/전사 텍스트 보정
+-> SOAP 정리 버튼
+-> 경과기록 draft 적용
+```
+
+중요한 의사결정은 SOAP을 realtime 중 자동 생성하지 않는 것이다. 실시간 중에는 STT와 화자 표시만 한다. SOAP은 사용자가 확정 발화와 화자 label을 확인한 뒤 `SOAP 정리`를 클릭할 때만 실행한다. 이는 잘못 전사된 문장이 곧바로 경과기록 초안으로 요약되는 위험을 줄이기 위한 구조다.
+
+화자는 다음 내부 값으로만 관리한다.
+
+```text
+doctor   -> 의사
+nurse    -> 간호사
+patient  -> 환자
+guardian -> 보호자
+unknown  -> 화자 미정
+```
+
+화자 자동 추정은 prompt 기반으로 시도하지만, 확정값이 아니다. UI에서 사용자가 select로 수정한 label을 SOAP 생성 시 우선 사용한다. 전사 텍스트도 확정 bubble에서 수정 가능하게 둔다.
+
+백엔드에는 다음 경계를 둔다.
+
+```text
+Realtime STT
+-> /recordSheet/voice-to-emr/realtime
+-> VoiceToEmrRealtimeWebSocketHandler
+-> OpenAI Realtime WebSocket
+
+Speaker classify
+-> /recordSheet/voice-to-emr/speaker
+-> OpenAiVoiceToEmrSpeakerClient
+-> Responses API structured output
+
+SOAP normalize
+-> /recordSheet/voice-to-emr/soap
+-> OpenAiVoiceToEmrSoapClient
+-> Responses API structured output
+```
+
+prompt는 Java 문자열에 묶어두지 않고 resource md 파일로 분리한다.
+
+```text
+resources/config/voice-to-emr-realtime-stt.md
+resources/config/voice-to-emr-speaker-classifier.md
+resources/config/voice-to-emr-soap-normalizer.md
+```
+
+원래 계획은 `voice-to-emr/prompts/*.md`였지만, 현재 작업 환경에서는 새 resource 하위 디렉터리 생성 권한이 막혀 있었다. 따라서 기존 `resources/config` 디렉터리 아래에 md 파일을 두고, `VoiceToEmrPromptLoader`가 해당 resource를 읽도록 조정했다. 위치는 다르지만 "prompt를 파일로 분리해 언제든 교체한다"는 의도는 유지된다.
+
+이 단계의 핵심 메시지는 다음이다.
+
+```text
+Realtime 전환의 목적은 AI 판단 자동화가 아니라, STT가 이루어지는 과정을 사용자에게 보여주고
+사용자가 발화/화자를 검토한 뒤 SOAP 초안을 적용하게 만드는 것이다.
+```
+
 ## 다음 단계
 
 1차 PoC가 성공하면 다음 순서로 확장한다.
