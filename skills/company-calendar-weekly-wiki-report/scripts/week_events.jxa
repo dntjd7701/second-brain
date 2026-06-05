@@ -1,0 +1,112 @@
+function run(argv) {
+  if (argv.length < 2) {
+    throw new Error('usage: osascript -l JavaScript week_events.jxa START_YYYY-MM-DD END_YYYY-MM-DD [CALENDAR_NAME] [blue]');
+  }
+
+  const start = parseLocalDate(argv[0]);
+  const end = parseLocalDate(argv[1]);
+  const targetCalendarName = argv[2] || '';
+  const colorFilter = argv[3] || '';
+  const Calendar = Application('Calendar');
+  const rows = [['start_date', 'end_date', 'calendar', 'summary', 'description', 'all_day'].join('\t')];
+
+  for (const calendar of Calendar.calendars()) {
+    const calendarName = readProperty(calendar, 'name', '');
+    const calendarColor = readProperty(calendar, 'color', null);
+
+    let includeCalendar = false;
+    if (targetCalendarName) {
+      includeCalendar = calendarName === targetCalendarName;
+    } else if (colorFilter === 'blue') {
+      includeCalendar = isBlueCalendar(calendarColor);
+    } else {
+      includeCalendar = true;
+    }
+
+    if (!includeCalendar) {
+      continue;
+    }
+
+    for (const event of calendar.events()) {
+      const eventStart = readProperty(event, 'startDate', null);
+      if (!(eventStart instanceof Date) || eventStart < start || eventStart >= end) {
+        continue;
+      }
+
+      const eventEnd = readProperty(event, 'endDate', eventStart);
+      const summary = readProperty(event, 'summary', '');
+      const description = readProperty(event, 'description', '');
+      const allDay = readProperty(event, 'alldayEvent', false);
+
+      rows.push([
+        formatDateTime(eventStart),
+        formatDateTime(eventEnd instanceof Date ? eventEnd : eventStart),
+        sanitize(calendarName),
+        sanitize(summary),
+        sanitize(description),
+        allDay ? 'true' : 'false',
+      ].join('\t'));
+    }
+  }
+
+  return rows.join('\n') + '\n';
+}
+
+function readProperty(object, propertyName, fallback) {
+  try {
+    const value = object[propertyName]();
+    return value === undefined || value === null ? fallback : value;
+  } catch (_error) {
+    return fallback;
+  }
+}
+
+function parseLocalDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new Error(`Invalid date: ${value}`);
+  }
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
+}
+
+function formatDateTime(date) {
+  return [
+    date.getFullYear(),
+    pad2(date.getMonth() + 1),
+    pad2(date.getDate()),
+  ].join('-') + ' ' + [pad2(date.getHours()), pad2(date.getMinutes())].join(':');
+}
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function sanitize(value) {
+  return String(value || '').replace(/[\t\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function isBlueCalendar(color) {
+  const rgb = normalizeRgb(color);
+  if (!rgb) {
+    return false;
+  }
+  const [red, green, blue] = rgb;
+  return blue > red && blue >= green;
+}
+
+function normalizeRgb(color) {
+  if (Array.isArray(color) && color.length >= 3) {
+    return color.slice(0, 3).map(Number);
+  }
+  if (typeof color === 'string') {
+    const hex = color.trim().replace(/^#/, '');
+    if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+      return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
+    }
+  }
+  return null;
+}

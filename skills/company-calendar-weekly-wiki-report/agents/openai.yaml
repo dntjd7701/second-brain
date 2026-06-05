@@ -1,0 +1,7 @@
+interface:
+  display_name: "Company Calendar Wiki Report"
+  short_description: "Company calendar to Duzon weekly report"
+  brand_color: "#2563EB"
+  default_prompt: "Use $company-calendar-weekly-wiki-report to write this week's 회사 calendar events into my Duzon wiki report."
+policy:
+  allow_implicit_invocation: true
