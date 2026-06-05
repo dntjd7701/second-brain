@@ -14,7 +14,9 @@
 
 ```text
 녹음 버튼
--> Web Speech API 또는 AI STT 전사
+-> 녹음 중 Web Speech API 실시간 미리보기
+-> 녹음 종료 후 MediaRecorder blob 생성
+-> AI STT 최종 전사
 -> 선택 시 AI SOAP 정리
 -> 경과기록 draft 삽입
 -> 사용자 검토/수정
@@ -22,6 +24,8 @@
 ```
 
 중요한 점은 저장 주체다. Voice to EMR은 경과기록 내용을 확정 저장하지 않는다. 초안을 draft에 입력할 뿐이다. 사용자가 내용을 확인하고 기존 저장 버튼을 눌러야 실제 경과기록 저장 프로세스가 수행된다.
+
+여기서 Web Speech API 결과는 최종 전사가 아니다. 녹음 중 사용자가 "현재 녹음이 되고 있다"는 피드백을 받기 위한 실시간 미리보기다. 경과기록 초안의 기준이 되는 전사 결과는 녹음 종료 후 audio blob을 AI STT provider에 전달해 생성한 결과다.
 
 ## 화면 흐름
 
@@ -304,7 +308,7 @@ voice-to-emr:
   stt:
     provider: openai
     openai:
-      api-key: sk-...
+      api-key: <local-openai-api-key>
       base-url: https://api.openai.com
       model: gpt-4o-mini-transcribe
 ```
@@ -393,9 +397,74 @@ FE에서는 LLM SOAP 분류가 실패해도 mock 분류로 fallback하지 않는
 - 운영 보안 정책
 - 유료 API 비용 산정
 
-## 2026-06-04 Realtime STT UI 전환 메모
+## 2026-06-05 브라우저 STT 미리보기 + blob 최종 전사 기준선
+
+Realtime 전환을 검토한 뒤, 1차 기준선은 다시 파일 업로드형 STT로 정리한다. 이유는 1차 PoC에 필요한 것이 진짜 AI realtime 전사가 아니라, 녹음 중 사용자에게 충분한 피드백을 주는 화면 흐름이기 때문이다.
+
+최종 기준선은 다음과 같다.
+
+```text
+녹음 시작
+-> MediaRecorder로 실제 음성 녹음 시작
+-> Web Speech API로 실시간 미리보기 텍스트 표시
+-> 녹음 종료
+-> MediaRecorder audio blob 확정
+-> POST /medical/recordSheet/voice-to-emr/stt
+-> OpenAI STT가 녹음본 기준 최종 transcript 반환
+-> 최종 transcript를 전사 내용 textarea에 반영
+-> 사용자가 오인식 문구 수정
+-> SOAP 정리 또는 원문 적용
+-> 경과기록 draft sheet 추가
+```
+
+이 구조에서 브라우저 STT는 UX provider이고, AI STT는 최종 데이터 provider다. 두 결과를 섞지 않는다. 브라우저 STT 미리보기는 화면에 즉시 반응을 주지만, 경과기록 초안에는 녹음본 기준 최종 전사만 사용한다.
+
+UI에서는 이 차이를 다음 문구로 드러낸다.
+
+```text
+녹음 중:
+실시간 미리보기
+
+녹음 종료 후:
+녹음본 기준 최종 전사 생성 중
+
+전사 편집 영역:
+최종 전사 결과
+```
+
+이 기준선을 선택한 이유는 다음과 같다.
+
+- 브라우저 STT는 무료이며 녹음 중 UI 반응성을 만들기 쉽다.
+- 최종 전사를 브라우저 STT에 의존하지 않으므로 의료기록 후보의 품질 기준을 분리할 수 있다.
+- blob STT는 REST 기반이므로 현재 medical 백엔드 구조와 잘 맞는다.
+- Realtime WebSocket proxy, VAD, 세션 유지, 모델별 payload 차이를 1차 범위에서 제외할 수 있다.
+- 나중에 진짜 realtime 품질이 필요해지면 별도 브랜치에서 `gpt-realtime-whisper`로 확장하면 된다.
+
+비용 기준도 1차 기준선을 뒷받침한다. 2026-06-05 OpenAI 공식 가격표 기준으로 STT 비용은 다음과 같이 차이 난다.
+
+```text
+gpt-4o-mini-transcribe: 약 $0.003/min
+gpt-4o-transcribe: 약 $0.006/min
+gpt-realtime-whisper: 약 $0.017/min
+```
+
+즉 `gpt-realtime-whisper`는 `gpt-4o-mini-transcribe` 대비 약 5.7배 비싸다. 5분 진료 1,000건 기준으로 단순 계산하면 blob mini 전사는 약 $15, realtime whisper는 약 $85 수준이다. 이 차이는 1차 PoC에서 무시하기 어렵다.
+
+따라서 현재 구현 기준은 다음 문장으로 정리한다.
+
+> 브라우저 STT로 실시간처럼 보이는 사용자 경험을 만들고, 실제 전사와 경과기록 초안 생성은 녹음 blob 기반 AI STT 결과를 기준으로 한다.
+
+참고 자료:
+
+- [OpenAI API Pricing](https://developers.openai.com/api/docs/pricing)
+- [gpt-realtime-whisper model](https://developers.openai.com/api/docs/models/gpt-realtime-whisper)
+- [gpt-realtime model](https://developers.openai.com/api/docs/models/gpt-realtime)
+
+## 2026-06-04 Realtime STT UI 전환 검토 메모
 
 Web Speech API와 파일 업로드형 STT 모두 시연은 가능하지만, 사용자가 보기에는 "녹음 종료 후 결과가 생기는 기능"에 가깝다. 경과기록 Voice to EMR을 설득/시연하려면 녹음 중에 대화가 실제로 전사되고 있다는 장면이 더 중요하다. 그래서 2026-06-04 구현에서는 기존 흐름을 Realtime STT 중심 UI로 재구성한다.
+
+다만 2026-06-05 재검토 결과, 이 Realtime 구조는 1차 기준선이 아니라 2차 확장 후보로 둔다. 1차에서는 위의 "브라우저 STT 미리보기 + blob 최종 전사" 방식을 사용한다.
 
 변경된 화면 구조는 다음이다.
 
