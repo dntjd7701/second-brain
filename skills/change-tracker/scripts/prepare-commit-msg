@@ -1,0 +1,11 @@
+#!/bin/bash
+# prepare-commit-msg hook
+# AI 변경과 수동 변경을 분류 (분류 결과는 post-commit에서 DB/보고서로 처리)
+#
+# 설치 위치: 각 프로젝트의 .git/hooks/prepare-commit-msg (심볼릭 링크)
+# 원본: /Users/woosung/.codex/skills/change-tracker/scripts/prepare-commit-msg
+
+# 이 hook은 현재 분류 로직 없이 통과만 수행한다.
+# 모든 분류 및 기록은 post-commit hook에서 처리한다.
+
+exit 0

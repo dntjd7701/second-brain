@@ -1,0 +1,218 @@
+#!/bin/bash
+# post-commit hook
+# 1. AI/수동 변경 분류
+# 2. SQLite DB에 커밋별 변경 이력 저장
+# 3. AI 변경 코드를 별도 마크다운 문서로 추출/저장
+# 4. change-tracking.json을 빈 상태로 초기화
+#
+# 설치 위치: 각 프로젝트의 .git/hooks/post-commit (심볼릭 링크)
+# 원본: /Users/woosung/.codex/skills/change-tracker/scripts/post-commit
+
+TRACKING_FILE="/Users/woosung/.codex/change-tracking/change-tracking.json"
+HISTORY_DIR="/Users/woosung/.codex/change-tracking/history"
+DB_PATH="/Users/woosung/.codex/change-tracking/change-tracker.db"
+
+# jq 필수
+if ! command -v jq &> /dev/null; then
+  exit 0
+fi
+
+# sqlite3 필수
+if ! command -v sqlite3 &> /dev/null; then
+  echo "[change-tracker] sqlite3가 설치되어 있지 않습니다." >&2
+  exit 0
+fi
+
+# 커밋 정보
+COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+COMMIT_DATE=$(date +%Y-%m-%d)
+COMMIT_TIME=$(date +%H:%M:%S)
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+REPO_NAME=$(basename "$REPO_ROOT" 2>/dev/null || echo "unknown")
+
+# 이번 커밋의 파일 목록
+COMMITTED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+if [ -z "$COMMITTED_FILES" ]; then
+  exit 0
+fi
+
+# 추적 파일 확인
+HAS_TRACKING=false
+CHANGES_COUNT=0
+if [ -f "$TRACKING_FILE" ]; then
+  CHANGES_COUNT=$(jq '.changes | length' "$TRACKING_FILE" 2>/dev/null || echo "0")
+  if [ "$CHANGES_COUNT" != "0" ] && [ -n "$CHANGES_COUNT" ] && [ "$CHANGES_COUNT" != "null" ]; then
+    HAS_TRACKING=true
+  fi
+fi
+
+# 추적 파일에서 메타 정보 추출
+TASK=""
+INSTRUCTION=""
+TOOL=""
+SESSION_ID=""
+if [ "$HAS_TRACKING" = true ]; then
+  TASK=$(jq -r '.task // ""' "$TRACKING_FILE" 2>/dev/null)
+  INSTRUCTION=$(jq -r '.instruction // ""' "$TRACKING_FILE" 2>/dev/null)
+  TOOL=$(jq -r '.tool // ""' "$TRACKING_FILE" 2>/dev/null)
+  SESSION_ID=$(jq -r '.session_id // ""' "$TRACKING_FILE" 2>/dev/null)
+fi
+
+# AI가 수정한 파일 목록 추출 (현재 저장소 기준)
+AI_FILES=""
+if [ "$HAS_TRACKING" = true ]; then
+  AI_FILES=$(jq -r --arg root "$REPO_ROOT" \
+    '.changes[] | select(.repo_root == $root) | .file' \
+    "$TRACKING_FILE" 2>/dev/null | sort -u)
+fi
+
+# --- DB에 commits 레코드 삽입 ---
+sqlite3 "$DB_PATH" "INSERT OR IGNORE INTO commits (commit_hash, commit_date, project, tool, session_id, task, instruction) VALUES ('$COMMIT_HASH', '$COMMIT_DATE $COMMIT_TIME', '$REPO_NAME', '$(echo "$TOOL" | sed "s/'/''/g")', '$(echo "$SESSION_ID" | sed "s/'/''/g")', '$(echo "$TASK" | sed "s/'/''/g")', '$(echo "$INSTRUCTION" | sed "s/'/''/g")');" 2>/dev/null
+
+# --- 파일별 분류 + DB insert ---
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+
+  # git diff로 라인 추가/삭제 수 계산
+  STAT=$(git diff-tree --no-commit-id --numstat -r HEAD -- "$file" 2>/dev/null)
+  LINES_ADDED=$(echo "$STAT" | awk '{print $1}')
+  LINES_REMOVED=$(echo "$STAT" | awk '{print $2}')
+  [ "$LINES_ADDED" = "-" ] && LINES_ADDED=0
+  [ "$LINES_REMOVED" = "-" ] && LINES_REMOVED=0
+
+  if [ "$HAS_TRACKING" = true ] && echo "$AI_FILES" | grep -qxF "$file"; then
+    CHANGE_TYPE="ai"
+    # AI 변경의 라인 범위와 diff_type 추출
+    LINE_START=$(jq -r --arg root "$REPO_ROOT" --arg f "$file" \
+      '[.changes[] | select(.repo_root == $root and .file == $f) | .lines.start // 0] | min' \
+      "$TRACKING_FILE" 2>/dev/null || echo "0")
+    LINE_END=$(jq -r --arg root "$REPO_ROOT" --arg f "$file" \
+      '[.changes[] | select(.repo_root == $root and .file == $f) | .lines.end // 0] | max' \
+      "$TRACKING_FILE" 2>/dev/null || echo "0")
+    DIFF_TYPE=$(jq -r --arg root "$REPO_ROOT" --arg f "$file" \
+      '.changes[] | select(.repo_root == $root and .file == $f) | .diff_type // "modify"' \
+      "$TRACKING_FILE" 2>/dev/null | head -1)
+  else
+    CHANGE_TYPE="manual"
+    LINE_START=0
+    LINE_END=0
+    DIFF_TYPE="modify"
+  fi
+
+  [ -z "$DIFF_TYPE" ] && DIFF_TYPE="modify"
+  [ -z "$LINE_START" ] || [ "$LINE_START" = "null" ] && LINE_START=0
+  [ -z "$LINE_END" ] || [ "$LINE_END" = "null" ] && LINE_END=0
+
+  sqlite3 "$DB_PATH" "INSERT INTO changes (commit_hash, file, change_type, diff_type, line_start, line_end, lines_added, lines_removed) VALUES ('$COMMIT_HASH', '$(echo "$file" | sed "s/'/''/g")', '$CHANGE_TYPE', '$DIFF_TYPE', $LINE_START, $LINE_END, ${LINES_ADDED:-0}, ${LINES_REMOVED:-0});" 2>/dev/null
+
+done <<< "$COMMITTED_FILES"
+
+echo "[change-tracker] DB 저장 완료: $COMMIT_HASH ($REPO_NAME)" >&2
+
+# --- AI 변경 마크다운 문서 생성 ---
+if [ "$HAS_TRACKING" = true ]; then
+  REPO_CHANGES_COUNT=$(jq --arg root "$REPO_ROOT" '[.changes[] | select(.repo_root == $root)] | length' "$TRACKING_FILE" 2>/dev/null || echo "0")
+
+  if [ "$REPO_CHANGES_COUNT" != "0" ] && [ -n "$REPO_CHANGES_COUNT" ]; then
+    mkdir -p "$HISTORY_DIR"
+    DOC_FILE="$HISTORY_DIR/commit-${COMMIT_DATE}-${COMMIT_HASH}.md"
+
+    if [ -f "$DOC_FILE" ]; then
+      COUNTER=2
+      while [ -f "$HISTORY_DIR/commit-${COMMIT_DATE}-${COMMIT_HASH}-${COUNTER}.md" ]; do
+        COUNTER=$((COUNTER + 1))
+      done
+      DOC_FILE="$HISTORY_DIR/commit-${COMMIT_DATE}-${COMMIT_HASH}-${COUNTER}.md"
+    fi
+
+    {
+      echo "# AI 변경 추출 - ${COMMIT_HASH}"
+      echo ""
+      echo "| 항목 | 값 |"
+      echo "|------|-----|"
+      echo "| 커밋 | \`${COMMIT_HASH}\` |"
+      echo "| 날짜 | ${COMMIT_DATE} ${COMMIT_TIME} |"
+      echo "| 프로젝트 | ${REPO_NAME} |"
+      echo "| 도구 | ${TOOL} |"
+      echo "| 세션 | ${SESSION_ID} |"
+      if [ -n "$TASK" ] && [ "$TASK" != "" ]; then
+        echo "| 태스크 | ${TASK} |"
+      fi
+      if [ -n "$INSTRUCTION" ] && [ "$INSTRUCTION" != "" ]; then
+        echo "| 지시 | ${INSTRUCTION} |"
+      fi
+      echo ""
+      echo "---"
+      echo ""
+      echo "## 변경 파일"
+      echo ""
+
+      jq -c --arg root "$REPO_ROOT" '.changes[] | select(.repo_root == $root)' "$TRACKING_FILE" 2>/dev/null | while IFS= read -r change; do
+        FILE=$(echo "$change" | jq -r '.file')
+        DIFF_TYPE=$(echo "$change" | jq -r '.diff_type // .type // "modify"')
+        LINE_START=$(echo "$change" | jq -r '.lines.start // 0')
+        LINE_END=$(echo "$change" | jq -r '.lines.end // 0')
+        BEFORE=$(echo "$change" | jq -r '.before // ""')
+        AFTER=$(echo "$change" | jq -r '.after // ""')
+        SUMMARY=$(echo "$change" | jq -r '.summary // ""')
+
+        EXT="${FILE##*.}"
+        case "$EXT" in
+          tsx|ts) LANG="tsx" ;;
+          jsx|js) LANG="javascript" ;;
+          java) LANG="java" ;;
+          xml) LANG="xml" ;;
+          css) LANG="css" ;;
+          scss) LANG="scss" ;;
+          sql) LANG="sql" ;;
+          *) LANG="" ;;
+        esac
+
+        echo "### ${FILE} (${DIFF_TYPE}) L${LINE_START}-${LINE_END}"
+        echo ""
+
+        if [ -n "$SUMMARY" ] && [ "$SUMMARY" != "" ] && [ "$SUMMARY" != "null" ]; then
+          echo "**Summary:** ${SUMMARY}"
+          echo ""
+        fi
+
+        if [ -n "$BEFORE" ] && [ "$BEFORE" != "" ] && [ "$BEFORE" != "null" ]; then
+          echo "**Before:**"
+          echo "\`\`\`${LANG}"
+          echo "$BEFORE"
+          echo "\`\`\`"
+          echo ""
+        fi
+
+        if [ -n "$AFTER" ] && [ "$AFTER" != "" ] && [ "$AFTER" != "null" ]; then
+          echo "**After:**"
+          echo "\`\`\`${LANG}"
+          echo "$AFTER"
+          echo "\`\`\`"
+          echo ""
+        fi
+
+        echo "---"
+        echo ""
+      done
+
+    } > "$DOC_FILE"
+
+    echo "[change-tracker] AI 변경 문서 생성: $DOC_FILE" >&2
+  fi
+
+  # --- 추적 파일 초기화 ---
+  cat > "$TRACKING_FILE" << 'EOF'
+{
+  "session_id": "",
+  "started_at": "",
+  "tool": "",
+  "task": "",
+  "instruction": "",
+  "changes": []
+}
+EOF
+  echo "[change-tracker] 추적 파일 초기화 완료." >&2
+fi
+
+exit 0

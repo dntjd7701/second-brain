@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">진료 데이터 마이그레이션 실행 프로그램 구성</title>
+  <desc id="desc">원천 확인, 이관 실행, 검증 결과 확인을 하나의 프로그램에서 처리하는 흐름을 보여주는 식별자 제거 이미지</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <linearGradient id="header" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#164e63"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <polygon points="0,0 10,4 0,8" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="720" fill="#f8fafc"/>
+  <rect x="70" y="58" width="1060" height="604" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+
+  <rect x="70" y="58" width="1060" height="76" rx="18" fill="url(#header)"/>
+  <rect x="70" y="114" width="1060" height="20" fill="#0f766e"/>
+  <text x="110" y="107" fill="#ffffff" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="26" font-weight="700">진료 데이터 마이그레이션 실행 프로그램</text>
+  <text x="900" y="104" fill="#ccfbf1" font-family="Arial, sans-serif" font-size="15">실행 / 검증 / 결과 확인</text>
+
+  <rect x="100" y="166" width="250" height="452" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="124" y="204" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="18" font-weight="700">실행 메뉴</text>
+
+  <rect x="124" y="232" width="202" height="46" rx="8" fill="#0f766e"/>
+  <text x="154" y="262" fill="#ffffff" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15" font-weight="700">원천 데이터 확인</text>
+
+  <rect x="124" y="294" width="202" height="46" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="154" y="324" fill="#334155" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15" font-weight="700">상병 이관 실행</text>
+
+  <rect x="124" y="356" width="202" height="46" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="154" y="386" fill="#334155" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15" font-weight="700">처방 이관 실행</text>
+
+  <rect x="124" y="418" width="202" height="46" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="154" y="448" fill="#334155" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15" font-weight="700">경과기록 확인</text>
+
+  <rect x="124" y="498" width="202" height="86" rx="10" fill="#e0f2fe" stroke="#7dd3fc"/>
+  <text x="146" y="530" fill="#075985" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="14" font-weight="700">목적</text>
+  <text x="146" y="556" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="13">수동 SQL 실행을 줄이고</text>
+  <text x="146" y="576" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="13">검증 흐름을 한곳에 모음</text>
+
+  <rect x="385" y="166" width="715" height="118" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="416" y="204" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="18" font-weight="700">원천 확인</text>
+  <text x="416" y="236" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">건수, 필수값, 한글 인코딩, 기준정보 매칭 가능 여부를 먼저 확인한다.</text>
+  <rect x="930" y="204" width="126" height="42" rx="8" fill="#ecfeff" stroke="#67e8f9"/>
+  <text x="961" y="231" fill="#155e75" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="14" font-weight="700">조회 실행</text>
+
+  <rect x="385" y="316" width="330" height="170" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="416" y="354" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="18" font-weight="700">이관 프로시저</text>
+  <text x="416" y="389" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">상병과 처방을 전용 절차로 분리</text>
+  <text x="416" y="418" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">원천 값을 표준 진료 구조로 변환</text>
+  <text x="416" y="447" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">기존 최대 순번 이후부터 채번</text>
+
+  <rect x="770" y="316" width="330" height="170" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="801" y="354" fill="#0f172a" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="18" font-weight="700">검증 결과</text>
+  <text x="801" y="389" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">임시 적재 건수 비교</text>
+  <text x="801" y="418" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">키 중복과 최종 충돌 확인</text>
+  <text x="801" y="447" fill="#475569" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">기준정보 조인 증폭 확인</text>
+
+  <path d="M 550 286 L 550 306" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M 716 401 L 766 401" stroke="#64748b" stroke-width="3"/>
+  <polygon points="766,401 752,393 752,409" fill="#64748b"/>
+
+  <rect x="385" y="520" width="715" height="98" rx="12" fill="#fefce8" stroke="#fde047"/>
+  <text x="416" y="558" fill="#713f12" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="18" font-weight="700">반복 실행 전 결정</text>
+  <text x="416" y="590" fill="#713f12" font-family="Apple SD Gothic Neo, Arial, sans-serif" font-size="15">임시 영역 초기화, 원천 중복 방지 조건, 실행 이력 관리 중 하나를 명확히 정한다.</text>
+</svg>

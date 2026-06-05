@@ -1,0 +1,89 @@
+# Luna Orbit Components Index
+
+사내 대상 UI 프레임워크 컴포넌트 목록 명세(AI Agent Reference)입니다.
+각 컴포넌트를 클릭하면 상세 Props 타입 및 메서드를 확인하실 수 있습니다.
+
+- [OBTYearMonthPeriodPicker](./OBTYearMonthPeriodPicker.md) - 
+- [OBTTooltip](./OBTTooltip.md) - OBTTooltip은 요약된 정보를 좀 더 상세히 표현하기 위해 사용됩니다.
+- [OBTTreeViewItem](./OBTTreeViewItem.md) - 
+- [OBTTreeView](./OBTTreeView.md) - OBTTreeView는 tree형태의 view를 제공합니다.
+- [Separator](./Separator.md) - 
+- [OBTTimePicker2](./OBTTimePicker2.md) - 
+- [OBTTimePicker](./OBTTimePicker.md) - 시간을 선택하는 컴포넌트 입니다.
+- [OBTTextField](./OBTTextField.md) - 
+- [OBTTabs](./OBTTabs.md) - 공통에서 제공하는 OBTTab의 부모 컴포넌트입니다.
+- [OBTTab](./OBTTab.md) - OBTTabs 하위에서 각각의 탭을 만드는 컴포넌트입니다.
+- [OBTSnackbar](./OBTSnackbar.md) - snackbar를 제공하는 컴포넌트 입니다.
+- [OBTSplitButton](./OBTSplitButton.md) - 
+- [OBTSingleYearMonthPicker](./OBTSingleYearMonthPicker.md) - 
+- [OBTScrollbar](./OBTScrollbar.md) - 
+- [OBTYearFieldDialog](./OBTYearFieldDialog.md) - 
+- [OBTYearField](./OBTYearField.md) - 
+- [OBTYearCalendar](./OBTYearCalendar.md) - 
+- [OBTSingleYearPicker](./OBTSingleYearPicker.md) - 
+- [OBTSingleDatePicker](./OBTSingleDatePicker.md) - 
+- [OBTRichEditor](./OBTRichEditor.md) - withApi() HOC 를 사용하면 Props 로 Api 를 사용할 수 있다. api 가 Optional 로 선언되었기에 내부에서 ! 오퍼레이터를 사용해서 호출한다. {@code this.props.api!.test();}
+- [OBTReferencePanel2](./OBTReferencePanel2.md) - 기존 OBTReferncePanel의 문제점들을 보완하고 더 많은 기능을 제공하는 참고박스 컴포넌트입니다.
+- [OBTReferencePanel](./OBTReferencePanel.md) - 참고박스를 사용하여 특정 내용에 대해 참고사항으로 정의할 수 있는 컴포넌트입니다.
+- [OBTRadioButtonGroup](./OBTRadioButtonGroup.md) - 
+- [OBTRadioButton](./OBTRadioButton.md) - 
+- [OBTResizeContainer](./OBTResizeContainer.md) - 
+- [OBTProgressDialog](./OBTProgressDialog.md) - 
+- [OBTProgress](./OBTProgress.md) - 
+- [OBTPreviousNextSelector](./OBTPreviousNextSelector.md) - 
+- [OBTPopupPanel](./OBTPopupPanel.md) - 설정한 영역에 슬라이드 형태로 팝업패널을 실행하는 컴포넌트입니다.
+- [OBTPopupMenu](./OBTPopupMenu.md) - 메뉴 링크이동 팝업으로 만들어진 컴포넌트입니다.
+- [OBTPagination](./OBTPagination.md) - 
+- [OBTPageButtons](./OBTPageButtons.md) - 
+- [OBTNumberField](./OBTNumberField.md) - 
+- [OBTMultiLineTextField](./OBTMultiLineTextField.md) - 
+- [OBTMaskedTextField](./OBTMaskedTextField.md) - 
+- [OBTMultiDropDownList](./OBTMultiDropDownList.md) - OBTNumberField Prop : { style, disabled, readonly, required, value, placeHolder, type, onFocus, onBlur, onChange, onMoveFocus }
+- [OBTPageContainer](./OBTPageContainer.md) - 페이지 개발시 최상단 HOC입니다.
+- [OBTModal](./OBTModal.md) - 
+- [OBTLoading](./OBTLoading.md) - OBTLoading Prop : { className }
+- [OBTListGrid](./OBTListGrid.md) - 
+- [OBTLinearProgress](./OBTLinearProgress.md) - 
+- [OBTGroupSelector2](./OBTGroupSelector2.md) - 데이터 배열을 카드형태의 리스트로 렌더링합니다. 데이터를 제공되는 템플릿에 맞게 가공하는 처리를 해주거나 (onMapItem) 각 데이터의 렌더링 로직을 직접 작성해줍니다. (onRenderItem)   전체 항목의 수가 주어진 영역에 담지못할 정도로 크면 리스트를 넘겨볼수 있게 끝단에 화살표 버튼이 추가됩니다. 렌더링된 항목은 단일항목을 선택하는 것이 가능합니다. (value) 선택한 항목은 하이라이팅됩니다.   다른 항목을 클릭한다면 해당 항목의 키값이 onChange 콜백으로 전달됩니다.
+- [OBTGroupSelector](./OBTGroupSelector.md) - 데이터 배열을 카드형태의 리스트로 렌더링합니다. 데이터를 제공되는 템플릿에 맞게 가공하는 처리를 해주거나 (onMapItem) 각 데이터의 렌더링 로직을 직접 작성해줍니다. (onRenderItem)   전체 항목의 수가 주어진 영역에 담지못할 정도로 크면 리스트를 넘겨볼수 있게 끝단에 화살표 버튼이 추가됩니다. 렌더링된 항목은 단일항목을 선택하는 것이 가능합니다. (value) 선택한 항목은 하이라이팅됩니다.   다른 항목을 클릭한다면 해당 항목의 키값이 onChange 콜백으로 전달됩니다.
+- [OBTFileView](./OBTFileView.md) - 파일을 전달받아 화면에 렌더링하는 기능을 합니다.
+- [OBTFormPanel](./OBTFormPanel.md) - Input 컴포넌트를 테이블 형태로 배치하는 패널입니다.
+- [OBTFloatingPanel](./OBTFloatingPanel.md) - 기준이되는 위치로부터 고정되어 최상위에 위치하는 패널입니다.
+- [OBTGanttChart](./OBTGanttChart.md) - withApi() HOC 를 사용하면 Props 로 Api 를 사용할 수 있다. api 가 Optional 로 선언되었기에 내부에서 ! 오퍼레이터를 사용해서 호출한다. {@code this.props.api!.test();}
+- [OBTExcelImportDialog](./OBTExcelImportDialog.md) - 엑셀 import 팝업 컴포넌트입니다.
+- [OBTExcelFormDialog](./OBTExcelFormDialog.md) - 데이터 테이블을 엑셀 양식으로 만들 수 있는 컴포넌트입니다.
+- [OBTDockPanel](./OBTDockPanel.md) - 
+- [OBTDropDownList2](./OBTDropDownList2.md) - 
+- [OBTDropDownList](./OBTDropDownList.md) - withApi() HOC 를 사용하면 Props 로 Api 를 사용할 수 있다. api 가 Optional 로 선언되었기에 내부에서 ! 오퍼레이터를 사용해서 호출한다. {@code this.props.api!.test();}
+- [OBTDialog2](./OBTDialog2.md) - 팝업형태의 창을 표시하는 컴포넌트입니다.
+- [OBTDialog](./OBTDialog.md) - 팝업형태의 창을 표시하는 컴포넌트입니다.
+- [OBTDataGrid](./OBTDataGrid.md) - 
+- [OBTDatePickerMaskedField](./OBTDatePickerMaskedField.md) - 
+- [OBTDatePickerField](./OBTDatePickerField.md) - 
+- [OBTDatePicker](./OBTDatePicker.md) - 
+- [OBTDatePeriodPicker](./OBTDatePeriodPicker.md) - 
+- [OBTConfirm](./OBTConfirm.md) - OBTConfirm Prop : { value, labelText, type, open, cancelText, confirmText }
+- [OBTConditionPanel](./OBTConditionPanel.md) - 조회조건 패널 컴포넌트입니다.  children 으로 OBTConditionItem 컴포넌트를 두어 조회조건을 추가합니다.
+- [OBTConditionItem](./OBTConditionItem.md) - OBTConditionPanel 하위의 각 검색조건 아이템입니다.
+- [OBTComplete](./OBTComplete.md) - 
+- [OBTComplete2](./OBTComplete2.md) - 
+- [OBTCodePicker](./OBTCodePicker.md) - 데이터소스에서 하나혹의 복수의 항목을 사용자에게 선택받는 컴포넌트입니다. 검색어를 입력받아 데이터소스로부터의 검색을 지원합니다.   다이얼로그로 데이터소스를 조회하고 선택할 수 있습니다. 데이터소스의 형태와 fetch할 방법, 다이얼로그의 형태등은 codePicker props에 정의합니다.  이 컴포넌트는 크게 3가지 영역으로 구분됩니다.   1. 인풋영역 - 데이터를 검색거나 선택한 데이터가 표시되는 영역입니다. 2. 드랍다운 영역 - canMultiSelect true 일경우 선택한 모든 항목이 표시되는 영역입니다. 3. 다이얼로그 영역 - 데이터소스를 조회해 보여주고 조회조건을 통해 상세 검색을 할수 있는 영역입니다.
+- [OBTColorPickerMain](./OBTColorPickerMain.md) - 
+- [OBTColorPicker](./OBTColorPicker.md) - 
+- [OBTBasicColorPicker](./OBTBasicColorPicker.md) - 
+- [OBTCheckBox2](./OBTCheckBox2.md) - 
+- [OBTChips](./OBTChips.md) - 데이터 소스를 칩의 형태로 표시하는 컴포넌트입니다.  개별 Chip 항목은 x버튼 클릭으로 삭제할 수 있고 드래그앤드랍으로 요소를 추가할 수도 있습니다.
+- [OBTCheckBox](./OBTCheckBox.md) - 
+- [OBTCardListInterface](./OBTCardListInterface.md) - OBTCardList 컴포넌트에 전달되어 대부분의 기능을 수행하는 객체입니다.
+- [OBTCardList](./OBTCardList.md) - 데이터소스를 가로배열되는 카드형태로 표시합니다.  데이터의 조회부터 조작등 대부분의 기능은 interface props에 할당된 객체를 이용합니다.
+- [OBTCalendar](./OBTCalendar.md) - 
+- [OBTButtonGroup](./OBTButtonGroup.md) - 
+- [OBTButton](./OBTButton.md) - 
+- [OBTAutoValueBinder](./OBTAutoValueBinder.md) - 컴포넌트의 ID와 state의 property명을 매핑하여 제어되는 컴포넌트로 자동 처리하는 컴포넌트입니다.
+- [DropDownItem](./DropDownItem.md) - 
+- [OBTAlert](./OBTAlert.md) - 하나의 버튼을 가지고 있는 Alert을 제공하는 컴포넌트 입니다.
+- [OBTAccordion2](./OBTAccordion2.md) - OBTAccordion 컴포넌트의 문제점을 보완한 아코디언 컴포넌트입니다.
+- [OBTAccordionSection](./OBTAccordionSection.md) - 아코디언 하위에 아코디언 섹션을 표시하는 컴포넌트입니다.
+- [OBTAccordionGroup](./OBTAccordionGroup.md) - 각 OBTAccordion을 감싸는 부모 컴포넌트입니다.
+- [OBTAccordion](./OBTAccordion.md) - 항목을 접고 펼칠 수 있는 아코디언 패널입니다.
+- [OBTCodePickerDialogController](./OBTCodePickerDialogController.md) - 

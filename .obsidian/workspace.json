@@ -4,40 +4,39 @@
     "type": "split",
     "children": [
       {
-        "id": "3f63ac2409c3f166",
+        "id": "65686e207a30e311",
         "type": "tabs",
         "children": [
           {
-            "id": "7341a199c9d8ead6",
+            "id": "eacb03ae03861c2a",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "환영합니다!.md",
+                "file": "failures/Dev Server Build Submodule 누락.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "환영합니다!"
+              "title": "Dev Server Build Submodule 누락"
             }
-          }
-        ]
-      },
-      {
-        "id": "7ce99a3c383bb6d4",
-        "type": "tabs",
-        "children": [
+          },
           {
-            "id": "5dfe0650046f0a30",
+            "id": "b7e287d099abd1b2",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "그래프 뷰"
+              "type": "markdown",
+              "state": {
+                "file": "technical-notes/Voice to EMR 경과기록지 1차 PoC 의사결정.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Voice to EMR 경과기록지 1차 PoC 의사결정"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -110,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "환영합니다!.md",
+                "file": "technical-notes/Voice to EMR 경과기록지 1차 PoC 의사결정.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -120,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "환영합니다! 의 백링크"
+              "title": "Voice to EMR 경과기록지 1차 PoC 의사결정 의 백링크"
             }
           },
           {
@@ -201,6 +200,43 @@
   },
   "active": "f6c6825cbbc53117",
   "lastOpenFiles": [
-    "환영합니다!.md"
+    "skills/company-calendar-weekly-wiki-report/scripts/week_company_events_sqlite.py",
+    "skills/company-calendar-weekly-wiki-report/SKILL.md",
+    "skills/company-calendar-weekly-wiki-report/scripts/week_events.jxa",
+    "skills/company-calendar-weekly-wiki-report/scripts/update_daily_report_cell.py",
+    "skills/company-calendar-weekly-wiki-report/scripts/calendar_inventory.applescript",
+    "skills/company-calendar-weekly-wiki-report/scripts/build_week_report_items.py",
+    "skills/company-calendar-weekly-wiki-report/scripts",
+    "skills/company-calendar-weekly-wiki-report/agents/openai.yaml",
+    "skills/company-calendar-weekly-wiki-report/agents",
+    "skills/company-calendar-weekly-wiki-report",
+    "skills/second-brain-vault-system/SKILL.md",
+    "skills/second-brain-core/SKILL.md",
+    "skills/playwright-cli/scripts/run-recorded-action.sh",
+    "skills/playwright-cli/scripts/run-mrma0010-yoyang-geubyeo-uiroe.sh",
+    "skills/playwright-cli/references/video-recording.md",
+    "skills/playwright-cli/references/tracing.md",
+    "skills/playwright-cli/references/test-generation.md",
+    "skills/playwright-cli/references/storage-state.md",
+    "skills/playwright-cli/references/session-management.md",
+    "skills/playwright-cli/references/running-code.md",
+    "skills/playwright-cli/references/request-mocking.md",
+    "skills/playwright-cli/references/recording-actions.md",
+    "skills/playwright-cli/references/mrma0010-yoyang-geubyeo-uiroe.md",
+    "skills/obt-ui-knowledge/SKILL.md",
+    "skills/obt-ui-knowledge/docs/OBTCalendar.md",
+    "skills/obt-ui-knowledge/docs/OBTSplitButton.md",
+    "skills/obt-ui-knowledge/docs/OBTResizeContainer.md",
+    "skills/obt-ui-knowledge/docs/OBTRadioButton.md",
+    "skills/obt-ui-knowledge/docs/OBTModal.md",
+    "skills/obt-ui-knowledge/docs/OBTConditionItem.md",
+    "skills/obt-ui-knowledge/docs/OBTDatePeriodPicker.md",
+    "skills/obt-ui-knowledge/docs/OBTDialog2.md",
+    "skills/obt-ui-knowledge/docs/OBTAccordionGroup.md",
+    "skills/obt-ui-knowledge/docs/OBTTreeViewItem.md",
+    "skills/obt-ui-knowledge/docs/OBTPagination.md",
+    "skills/obt-ui-knowledge/docs/OBTCardListInterface.md",
+    "Screenshot 2026-05-21 at 4.20.53 PM.png",
+    "attachments/진료 데이터 마이그레이션 실행 프로그램.svg"
   ]
 }

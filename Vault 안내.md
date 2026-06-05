@@ -18,8 +18,11 @@ tags:
 
 - [[settings/Vault Root 설정]]
 - [[process/Obsidian 지식화 정책]]
+- [[process/에이전트 스킬 구조와 검증 원칙]]
 - [[career/성과와 기술 성장 포트폴리오]]
 - [[technical-notes/EMR 포틀릿 환자 변경 안정성]]
+- [[technical-notes/진료 데이터 마이그레이션 처리 방식]]
+- [[technical-notes/MRMA0010 요양급여의뢰서 테스트 프로세스]]
 
 ## 작성 원칙
 
