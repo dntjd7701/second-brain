@@ -4,7 +4,7 @@
 
 이 문서는 Voice to EMR 경과기록지 1차 PoC를 어떤 순서로 구현할지 정리한다. 초기 목표는 먼저 경과기록지 화면 안에서 음성 기반 초안 입력 흐름이 자연스럽게 동작하는지 검증하는 것이었다. 이후 Web Speech API의 STT 품질 한계가 확인되어, 테스트용 음성에 한해 OpenAI STT/SOAP provider를 붙여 흐름을 보강한다.
 
-1차 구현은 품질 검증보다 설득/시연에 가깝다. 사용자가 보는 흐름은 실제 기능처럼 부드러워야 한다. 녹음 중 상태, 변환 중 로딩, 결과 적용, 경과기록 draft 등록까지 하나의 자연스러운 과정으로 보여야 한다.
+1차 구현은 품질 검증보다 설득/시연에 가깝다. 사용자가 보는 흐름은 실제 기능처럼 부드러워야 한다. 녹음 중 상태, 변환 중 로딩, SOAP 초안 확인, 기존 경과기록 저장 흐름을 통한 저장까지 하나의 자연스러운 과정으로 보여야 한다.
 
 연결되는 의사결정 배경은 [[Voice to EMR 경과기록지 1차 PoC 의사결정]]에 정리한다. 기존 경과기록지 조회/신규작성 기준은 [[경과기록지_조회와_신규작성_분리_기준]]을 따른다.
 
@@ -13,38 +13,43 @@
 1차 프로세스는 다음으로 고정한다.
 
 ```text
-녹음 버튼
--> 녹음 중 파형/타이머/live 상태 표시
--> 녹음 종료 후 MediaRecorder audio blob 생성
+MEDA0010 메인 Voice Note 버튼
+-> 우측 하단 플로팅 플레이어 표시
+-> MediaRecorder 녹음, 파형/타이머/live 상태 표시
+-> 일시정지/재개는 실제 MediaRecorder pause/resume으로 처리
+-> 정지 시 플레이어에서 처리 로딩
+-> MediaRecorder audio blob 생성
 -> AI STT 최종 전사
--> 선택 시 AI SOAP 정리
--> 경과기록 draft 삽입
--> 사용자 검토/수정
--> 기존 저장 버튼으로 저장
+-> AI SOAP 초안 자동 생성
+-> Voice Note 결과 다이얼로그에는 SOAP 초안만 우선 표시
+-> 사용자가 SOAP 초안 검토/수정
+-> 저장 버튼으로 기존 ProgressNote 저장 흐름 실행
 ```
 
-중요한 점은 저장 주체다. Voice to EMR은 경과기록 내용을 확정 저장하지 않는다. 초안을 draft에 입력할 뿐이다. 사용자가 내용을 확인하고 기존 저장 버튼을 눌러야 실제 경과기록 저장 프로세스가 수행된다.
+중요한 점은 저장 책임이다. 화면에서는 `저장` 버튼을 제공하지만, AI가 DB를 직접 저장하는 구조가 아니다. Voice Note는 SOAP HTML을 기존 ProgressNote draft 생성 흐름에 전달하고, 실제 저장은 기존 `ProgressNote.handleSave`와 `RecordSheetService.insert`를 재사용한다.
 
 여기서 녹음 중 UI는 텍스트 미리보기가 아니라 상태 피드백이다. 사용자는 파형, timer, live 표시로 "현재 녹음이 되고 있다"는 피드백을 받는다. 경과기록 초안의 기준이 되는 전사 결과는 녹음 종료 후 audio blob을 AI STT provider에 전달해 생성한 결과다.
 
 ## 화면 흐름
 
-경과기록지 사이드바 안에 `Voice to EMR` 진입점을 둔다. 버튼 위치는 경과기록 컴포넌트의 `기록지 추가`가 있는 영역을 기준으로 한다. 사용자가 수동으로 기록지를 추가하는 행동과 음성으로 초안을 생성하는 행동을 같은 작성 맥락으로 이해하게 만들기 위해서다.
+`Voice Note` 진입점은 MEDA0010 메인 버튼 영역에 둔다. 경과기록 사이드바 안쪽 버튼으로만 두면 사용자는 경과기록 패널을 먼저 열어야 하고, 녹음 중 다른 화면을 보거나 조작하기 어렵다. Voice Note는 진료 중 언제든 시작할 수 있어야 하므로 메인 버튼으로 이동한다.
 
-권장 UX는 다이얼로그 방식이다.
+녹음 UI는 중앙 모달이 아니라 우측 하단 플로팅 플레이어 방식이다. 이 구조는 사용자가 환자 정보, 처방, 기존 경과기록 등 다른 화면을 보면서 녹음할 수 있게 한다.
 
 ```text
-Voice to EMR 버튼 클릭
--> 녹음/전사 다이얼로그 열림
+Voice Note 버튼 클릭
+-> 우측 하단 플레이어 열림
 -> 마이크 권한 요청
 -> 녹음 시작
 -> 파형과 녹음 시간 표시
--> 녹음 종료
--> AI 최종 전사 생성
--> SOAP 초안 생성
--> 미리보기
--> 적용
--> 경과기록 draft에 삽입
+-> 필요 시 실제 녹음 일시정지/재개
+-> 정지
+-> 플레이어에서 STT/SOAP 처리 로딩
+-> Voice Note 결과 다이얼로그 열림
+-> 기본 화면은 SOAP 초안만 표시
+-> 전문 보기를 누르면 전사 전문과 화자 구분을 지연 조회
+-> 저장
+-> 기존 경과기록 저장 흐름 실행
 ```
 
 ## UI 상태 전환
@@ -56,6 +61,7 @@ Voice to EMR 버튼 클릭
 ```text
 idle
 -> recording
+-> paused
 -> transcribing
 -> normalizing
 -> applying
@@ -64,14 +70,15 @@ idle
 
 상태별 UI 기준은 다음과 같다.
 
-- `idle`: `기록지 추가` 영역 근처에 녹음기 버튼을 표시한다.
-- `recording`: 버튼을 활성 상태로 바꾸고, "녹음 중" 문구와 진행 시간을 보여준다.
-- `transcribing`: 녹음 종료 후 "대화 내용을 텍스트로 변환 중" 로딩을 보여준다.
-- `normalizing`: "SOAP 기준으로 정리 중" 로딩을 보여준다.
-- `applying`: "경과기록지에 입력 중" 로딩을 보여준다.
-- `completed`: draft에 반영된 뒤 완료 메시지를 보여주고 사용자가 바로 수정할 수 있게 한다.
+- `idle`: MEDA0010 메인 버튼에 Voice Note gradient 버튼을 표시한다.
+- `recording`: 메인 버튼은 빨간 pulse 상태로 바뀌고, 플로팅 플레이어에는 파형과 시간이 표시된다.
+- `paused`: MediaRecorder를 실제 pause 상태로 두고, 플레이어에는 재개/정지 버튼을 표시한다.
+- `transcribing`: 녹음 종료 후 플레이어에서 처리 로딩을 보여준다.
+- `normalizing`: SOAP 기준으로 정리 중인 상태를 표시한다.
+- `applying`: 저장 버튼 클릭 후 기존 ProgressNote 저장 흐름 실행 중임을 나타낸다.
+- `completed`: 저장 성공 메시지를 보여주고 Voice Note를 닫는다.
 
-가능하면 `recording` 상태는 색상과 아이콘 변화가 있어야 한다. 시연에서는 녹음 중임이 한눈에 보여야 하며, 녹음 중 버튼을 다시 누르면 종료된다는 동작도 명확해야 한다.
+`recording` 상태는 색상과 아이콘 변화가 있어야 한다. 시연에서는 메인 Voice Note 버튼 자체가 빨간 pulse 상태가 되어야 한다. 사용자가 다른 화면을 보고 있어도 현재 녹음 중임을 놓치지 않게 하기 위함이다.
 
 다이얼로그에는 최소한 다음 상태가 필요하다.
 
@@ -82,6 +89,32 @@ idle
 - 적용 완료
 - 오류
 
+## 2026-06-05 Voice Note UX 재정의
+
+최신 구현 기준은 "전문 우선"이 아니라 "SOAP 초안 우선"이다.
+
+이렇게 바꾼 이유는 다음과 같다.
+
+- 사용자가 매번 STT 전문을 볼 필요는 없다.
+- 사용자의 목적은 전사 검수가 아니라 경과기록 작성 보조다.
+- 녹음은 다른 화면을 보면서 진행되어야 하므로 우측 하단 플레이어가 적합하다.
+- SOAP 초안이 생성되면 사용자가 바로 저장할 수 있어야 사용성이 높다.
+
+따라서 결과 다이얼로그는 기본적으로 SOAP 초안만 보여준다. 전사 전문과 화자 구분은 `전문 보기` 버튼을 눌렀을 때만 표시한다.
+
+```text
+기본 결과 화면:
+SOAP 초안
+닫기 / 재녹음 / 저장
+
+전문 보기 클릭 후:
+좌측 전문 + 화자 라벨
+우측 SOAP 초안
+닫기 / 재녹음 / 저장
+```
+
+전문 보기를 지연 처리하는 이유는 비용과 지연을 줄이고, 화면을 경과기록 초안 중심으로 유지하기 위해서다. 화자 역할 분류는 STT 결과의 speaker segment를 기반으로 후처리하며, 사용자가 요청한 경우에만 호출한다.
+
 오류는 화면에서 숨기지 않는다. 마이크 권한 거부, 브라우저 미지원, 전사 실패, 빈 전사 결과는 사용자에게 명확히 알려야 한다.
 
 ## FE 구성
@@ -91,22 +124,23 @@ idle
 ```text
 VoiceEmrDialog
 MediaRecorderAiSttProvider
-OpenAi diarized STT
-SpeakerRoleClassifier
+OpenAI STT plain endpoint
+SpeakerRoleClassifier 지연 호출
 LlmSoapNormalizer
 SoapHtmlRenderer
-ProgressNote.applyVoiceEmrNote(noteHtml)
+ProgressNote.handleSaveVoiceEmrNote(noteHtml)
 ```
 
 역할은 다음처럼 나눈다.
 
-- `VoiceEmrDialog`: 녹음 상태 UI, 최종 전사 편집, SOAP 초안 편집/적용 담당
-- `MediaRecorderAiSttProvider`: 음성 파일을 백엔드 STT gateway로 전달
-- `OpenAi diarized STT`: 녹음 blob을 전사하고 가능한 경우 speaker segment를 반환
-- `SpeakerRoleClassifier`: speaker segment를 의사/간호사/환자/보호자/화자 미정으로 후처리
+- `MEDA0010`: 메인 Voice Note 버튼, 녹음 상태 버튼 스타일, Voice Note 저장 handler 담당
+- `VoiceEmrDialog`: 플로팅 녹음 플레이어, SOAP 우선 결과 다이얼로그, 전문 보기 지연 조회, 재녹음/저장 담당
+- `MediaRecorderAiSttProvider`: 음성 파일을 백엔드 STT plain gateway로 전달
+- `OpenAI STT plain endpoint`: 녹음 blob을 전사하고 SOAP 생성에 필요한 transcript를 반환
+- `SpeakerRoleClassifier`: `전문 보기` 클릭 시 speaker segment를 의사/간호사/환자/화자 미정으로 후처리
 - `LlmSoapNormalizer`: transcript를 백엔드 SOAP normalizer로 전달
 - `SoapHtmlRenderer`: SOAP JSON을 경과기록 HTML로 변환
-- `applyVoiceEmrNote`: 생성된 noteHtml을 현재 경과기록 draft에 삽입
+- `handleSaveVoiceEmrNote`: 생성된 noteHtml을 새 경과기록 draft sheet로 추가한 뒤 기존 저장 흐름 실행
 
 브라우저 STT provider는 현재 기준선에서 제거한다. 녹음 중 텍스트 미리보기는 불안정하고 최종 전사와 혼선을 만들 수 있으므로, 녹음 중에는 파형/타이머만 보여준다. 브라우저가 MediaRecorder를 지원하지 않거나 마이크 권한이 거부되면 오류 메시지를 보여주고 수동 전사 입력 흐름으로 fallback한다.
 
@@ -166,9 +200,13 @@ SOAP 정리 실패
 저장은 변경하지 않는다.
 
 Voice to EMR 적용 후 경과기록 draft가 dirty 상태가 되면, 사용자는 기존 저장 버튼을 누른다. 그러면 기존 경과기록 저장 프로세스가 수행된다.
+2026-06-05 이후 Voice Note 결과 화면에는 별도 `저장` 버튼을 둔다. 다만 이 버튼은 저장 API를 직접 호출하지 않고 기존 ProgressNote 저장 흐름을 재사용한다.
 
 ```text
-draft HTML
+Voice Note 저장 버튼
+-> ProgressNoteWrapper.handleSaveVoiceEmrNote(noteHtml)
+-> ProgressNote.handleSaveVoiceEmrNote(noteHtml)
+-> RecordSheetService.addSheet(defaultContentHtml)
 -> RecordSheetService.insert()
 -> dirty data 생성
 -> /medical/recordSheet/0ho01001
@@ -226,6 +264,8 @@ ProgressNote/components/ProgressNote.js
 ProgressNote/components/VoiceEmrDialog.js
 ProgressNote/components/VoiceEmrPocService.js
 ProgressNote/components/ProgressNote.scss
+MEDA0010/MEDA0010.js
+MEDA0010/MEDA0010.scss
 ```
 
 구현 흐름은 다음과 같다.
@@ -243,6 +283,30 @@ ProgressNote/components/ProgressNote.scss
 이 구현은 AI 기능을 붙이지 않았던 최초 기준이다. 다만 provider 이름을 `WebSpeechSttProvider`, normalizer 이름을 `MockSoapNormalizer`로 남겨 이후 `OpenAiSttProvider`, `AzureSttProvider`, `InternalSttProvider`, `LlmSoapNormalizer`로 교체할 수 있게 했다.
 
 이후 OpenAI STT/SOAP provider를 붙인 뒤에는 키워드 판단 방식의 `MockSoapNormalizer`를 제거했다. 현재 시연 흐름은 SOAP 정리 성공 시 LLM JSON을 HTML로 렌더링하고, 실패 시 transcript 원문을 수정 가능 상태로 유지한 뒤 원문 그대로 경과기록 draft에 입력할 수 있게 한다.
+
+2026-06-05 기준 최신 구현은 다음처럼 바뀌었다.
+
+```text
+MEDA0010 메인 Voice Note 버튼
+-> VoiceEmrDialog 플로팅 플레이어
+-> MediaRecorderAiSttProvider
+-> POST /medical/recordSheet/voice-to-emr/stt/plain
+-> STT-only transcript 반환
+-> POST /medical/recordSheet/voice-to-emr/soap
+-> SOAP HTML 생성
+-> Voice Note 결과 다이얼로그에는 SOAP 초안만 우선 표시
+-> 저장
+-> ProgressNote.handleSaveVoiceEmrNote(noteHtml)
+-> 기존 경과기록 저장 흐름
+
+전문 보기 선택 시:
+plain STT result
+-> POST /medical/recordSheet/voice-to-emr/speaker-role
+-> 화자 역할 보정
+-> 전문 영역 확장 표시
+```
+
+메인 Voice Note 버튼은 이전 경과기록 내부 버튼의 gradient/shimmer 디자인을 유지한다. 녹음 중에는 빨간 gradient와 pulse shadow로 바뀌어 사용자가 다른 화면을 보고 있어도 녹음 상태를 인지할 수 있게 한다.
 
 ## 2026-06-03 AI STT provider 추가 메모
 
