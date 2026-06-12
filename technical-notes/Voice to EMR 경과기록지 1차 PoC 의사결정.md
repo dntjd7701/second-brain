@@ -272,3 +272,25 @@ SOAP 초안:
 ```
 
 이 분리는 비용과 성능을 모두 설명할 수 있는 근거가 된다. 모든 사용자가 매번 전문을 열지 않는다면, 화자 역할 후처리는 필요한 경우에만 호출하면 된다.
+
+## 2026-06-12 OneAI provider 전환 후보
+
+OpenAI 직접 호출 PoC를 운영 기준으로 옮길 때 OneAI 내부 AI gateway를 provider로 사용할 수 있는지 분석했다. 결론은 STT/LLM 기능 자체는 medical BE adapter에서 OneAI API를 호출하는 방식으로 구현 가능하다는 것이다.
+
+세부 분석은 [[OneAI Voice Note Provider 전환 분석]]에 정리한다. 1차 기준은 `oai001A02` multipart STT와 `oai001A04` 동기 LLM 호출이다. OneAI의 GCP Voice Object 흐름은 GCS, Kafka, operationId polling, Elasticsearch rawResult까지 포함하는 정식 비동기 파이프라인이지만, 10분 이하 Voice Note 즉시 처리에는 먼저 적용하기에 무겁다.
+
+따라서 provider 교체 후보는 다음처럼 정리한다.
+
+```text
+OpenAI 직접 호출
+-> PoC와 빠른 품질 확인에 유리
+
+OneAI oai001A02 / oai001A04
+-> 운영 gateway 전환의 1차 후보
+-> FE 변경 없이 medical adapter에서 처리 가능
+
+OneAI Voice Object / GCP batch STT
+-> 장시간 음성, rawResult 보존, audio seek, job 복구가 필요할 때 재검토
+```
+
+이 결정은 기존 원칙을 유지한다. Voice Note는 AI 결과를 직접 저장하지 않고, 사용자가 검토한 초안을 기존 ProgressNote 저장 흐름으로 넘긴다.
