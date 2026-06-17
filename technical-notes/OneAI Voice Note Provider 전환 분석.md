@@ -181,6 +181,43 @@ provider, 단계, 처리 시간, transcript 길이, 실패 원인을 남긴다. 
 
 FE 계약이 커지고 검증 범위가 늘어난다. 현재 FE는 jobId polling만 알면 되고, provider가 OpenAI인지 OneAI인지는 몰라도 된다.
 
+## 타 모듈 확인 요청 항목
+
+아래 항목은 `amaranth10-medical`에서 임의로 해결하지 않고 OneAI 또는 ECM 모듈의 API 계약으로 확인해야 한다. medical은 호출 로그와 사용자용 오류 분리, 재시도 UX만 담당한다.
+
+### OneAI voice object 실패 원인
+
+현재 `oai011A03` 상태 조회에서 `status=FAILED`만 확인되고, 실패 원인은 `failureMessage=null`로 내려올 수 있다. medical 로그에는 `voiceUid`, `manageType`, `voiceObjectKeys`, `resourceKeys`, `apiPath`까지 남길 수 있지만 실제 실패 사유는 OneAI 내부 처리 결과가 내려와야 알 수 있다.
+
+OneAI 쪽에 확인할 내용은 다음이다.
+
+- Google STT, Kafka consumer, GCS upload/output parse, Elasticsearch 저장 실패 중 어느 단계에서 실패했는지 반환 가능한지
+- 실패 메시지 또는 실패 코드를 `oai011A03` 응답에 안정적으로 포함할 수 있는지
+- `resources.fileInfo`, `rawResult`, provider raw error 같은 디버깅 필드를 운영 로그 또는 개발 응답에 노출할 수 있는지
+- `manageType=L` 화자 구분 요청에서 추가로 필요한 옵션이나 제한이 있는지
+
+### OneAI LLM API 계약
+
+SOAP와 발화 역할 분류는 prompt 기반 JSON 생성이 필요하다. 개발 테스트에서는 `oai001A16`에서 `resultCode=29040`, `Failed to receive module data.`가 발생했고, prompt 기반 동기 생성은 `oai001A04`를 우선 후보로 본다.
+
+OneAI 쪽에 확인할 내용은 다음이다.
+
+- 의료 경과기록 SOAP JSON 생성에 권장되는 API와 모델
+- JSON schema strict 또는 구조화 출력에 준하는 옵션 제공 여부
+- prompt, model, input/messages 필드의 정식 요청 구조
+- 실패 시 사용자에게 보여줄 메시지와 개발 로그용 상세 메시지를 분리해서 받을 수 있는지
+
+### ECM 임시 음성 파일 정책
+
+Voice Note는 ECM에 음성 파일을 업로드한 뒤 OneAI voice object가 해당 파일을 처리한다. 현재 medical은 terminal 상태에서 cleanup을 수행할 수 있지만, 실패 직후 바로 삭제하면 같은 음성 파일로 STT를 재시도할 수 없다.
+
+ECM 쪽에 확인할 내용은 다음이다.
+
+- `uploadFolderType=voice`로 업로드한 파일의 권장 보관 정책과 TTL
+- OneAI 처리 실패 후 medical이 즉시 삭제해야 하는지, 일정 시간 재시도를 위해 남겨도 되는지
+- 삭제 API가 멱등적으로 동작하는지
+- 개발/운영 로그에서 docUid 외에 파일 처리 실패 원인을 추적할 수 있는지
+
 ## 재검토 조건
 
 다음 조건 중 하나가 생기면 설계를 다시 본다.
